@@ -5,13 +5,18 @@ import (
 	"fmt"
 	"log"
 	"time"
-
+	"github.com/mdozairq/e-voting-be/config"
+	"github.com/mdozairq/e-voting-be/utils"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func DBinstances() *mongo.Client {
-	MongoUri := "mongodb://localhost:27017"
+	config.LoadEnv()
+	utils.LogInfo("env loaded")
+	dbConfig := config.NewDBConfig()
+	utils.LogInfo(config.NewDBConfig().MongoUri)
+	MongoUri := dbConfig.MongoUri
 	fmt.Println(MongoUri)
 	client, err := mongo.NewClient(options.Client().ApplyURI(MongoUri))
 
@@ -36,6 +41,7 @@ func DBinstances() *mongo.Client {
 var Client *mongo.Client = DBinstances()
 
 func OpenCollection(client *mongo.Client, collectionName string) *mongo.Collection {
-	var collection *mongo.Collection = client.Database("e-voting").Collection(collectionName)
+	dbConfig := config.NewDBConfig()
+	var collection *mongo.Collection = client.Database(dbConfig.Dbname).Collection(collectionName)
 	return collection
 }

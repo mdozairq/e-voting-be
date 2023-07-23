@@ -2,8 +2,10 @@ package helpers
 
 import (
 	"encoding/json"
-	"github.com/gin-gonic/gin"
+	"fmt"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // InterceptResponse represents the structure of the intercepted response.
@@ -22,9 +24,16 @@ func ResponseInterceptor() gin.HandlerFunc {
 		c.Writer = captureWriter
 		c.Next()
 
+		fmt.Println(captureWriter.responseData)
 		// Build the formatted response.
+		var recievedData interface{}
+		if captureWriter.statusCode >= 400 {
+			recievedData = nil
+		} else {
+			recievedData =  captureWriter.responseData
+		}
 		response := InterceptResponse{
-			Data:    captureWriter.responseData,
+			Data:    recievedData,
 			Status:  captureWriter.statusCode,
 			Error:   captureWriter.statusCode >= 400,
 			Message: captureWriter.statusText,

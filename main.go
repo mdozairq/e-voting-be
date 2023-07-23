@@ -1,28 +1,29 @@
 package main
 
 import (
-	"os"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/mdozairq/e-voting-be/config"
 	"github.com/mdozairq/e-voting-be/helpers"
 	"github.com/mdozairq/e-voting-be/routes"
+	"github.com/mdozairq/e-voting-be/utils"
 )
 
 func main() {
-	port := os.Getenv("PORT")
+	config.LoadEnv()
+	utils.LogInfo("env loaded")
+	serverConfig := config.NewServerConfig()
+	port := serverConfig.Port
 	if port == "" {
 		port = "8080"
 	}
 
 	router := gin.New()
-	// router.Use(ResponseInterceptor())
+	router.Use(helpers.ResponseInterceptor())
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	router.Use(cors.Default())
-	router.Use(helpers.ResponseInterceptor())
-	// router.Use(middlewares.Auth())
-	allRoute := router.Group("/e-voting")
+	allRoute := router.Group(serverConfig.BasePath)
 	routes.AddRoutes(allRoute)
 
 	router.Run(":" + port)
