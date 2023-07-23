@@ -8,15 +8,19 @@ import (
 	"net/http"
 	"time"
 
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/mdozairq/e-voting-be/config"
 	"github.com/mdozairq/e-voting-be/database"
+	"github.com/mdozairq/e-voting-be/helpers"
 	"github.com/mdozairq/e-voting-be/models"
 	"github.com/mdozairq/e-voting-be/utils"
 	"github.com/twilio/twilio-go"
 	api "github.com/twilio/twilio-go/rest/api/v2010"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -25,6 +29,9 @@ var adhaarCardCollection *mongo.Collection = database.OpenCollection(database.Cl
 
 // otpCollection is the MongoDB collection for storing OTP documents.
 var otpCollection *mongo.Collection = database.OpenCollection(database.Client, "otps")
+
+// voterCollection is the MongoDB collection for storing Voter Data
+var voterCollection *mongo.Collection = database.OpenCollection(database.Client, "voters")
 
 const dobLayout = "2006-01-02"
 
@@ -88,8 +95,23 @@ func SignInVoter() gin.HandlerFunc {
 		err := adhaarCardCollection.FindOne(ctx, bson.M{"uid": adhaar.UID}).Decode(&foundAdhaar)
 		defer cancel()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "adhaarcard not found, uid number seems to be incorrect"})
+			c.JSON(http.StatusNotFound, gin.H{"error": "adhaarcard not found, uid number seems to be incorrect"})
 			return
+		}
+
+		count, err := voterCollection.CountDocuments(ctx, bson.M{"adhaarnumber": foundAdhaar.UID})
+		defer cancel()
+		if err != nil {
+			log.Panic(err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while checking for the adhaar card"})
+			return
+		}
+
+		countStr := strconv.FormatInt(count, 10)
+		utils.LogInfo(countStr)
+
+		if count < 1 {
+			CreateVoter(&foundAdhaar)
 		}
 
 		otp := GenerateOTP()
@@ -183,14 +205,17 @@ func VerifyOTP() gin.HandlerFunc {
 		// Get the UID, phone number, and OTP from the request
 
 		var userOtp models.OTP
-		var foundAdhaar models.AdhaarCard
+		var foundVoter models.Voter
 
 		if err := c.ShouldBindJSON(&userOtp); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		err := adhaarCardCollection.FindOne(ctx, bson.M{"uid": userOtp.UID}).Decode(&foundAdhaar)
+		utils.LogInfo(userOtp.OTP)
+		utils.LogInfo(userOtp.UID)
+
+		err := voterCollection.FindOne(ctx, bson.M{"adhaarnumber": userOtp.UID}).Decode(&foundVoter)
 		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "adhaarcard not found, uid number seems to be incorrect"})
@@ -201,7 +226,7 @@ func VerifyOTP() gin.HandlerFunc {
 
 		// Fetch OTP document from the OTP collection based on UID and phone number
 		var otpDoc models.OTP
-		err = otpCollection.FindOne(ctx, bson.M{"uid": foundAdhaar.UID, "phone_number": foundAdhaar.Mobile}, opts).Decode(&otpDoc)
+		err = otpCollection.FindOne(ctx, bson.M{"uid": foundVoter.AdhaarNumber, "phone_number": foundVoter.Phone}, opts).Decode(&otpDoc)
 		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"error": "OTP not found"})
 			return
@@ -219,9 +244,15 @@ func VerifyOTP() gin.HandlerFunc {
 			return
 		}
 
-		
+		token, refreshToken, _ := helpers.GenerateAllTokens(foundVoter, "voter")
 
-		c.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully"})
+		//update tokens - token and refersh token
+		helpers.UpdateAllTokens(token, refreshToken, foundVoter.ID.Hex())
+
+		//return statusOK
+		c.JSON(http.StatusOK, gin.H{"refresh_token": refreshToken, "token": token})
+
+		// c.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully"})
 	}
 }
 
@@ -248,4 +279,41 @@ func SaveOTP(uid, phoneNumber, otp string) error {
 	return err
 }
 
+func CreateVoter(aadhaarCard *models.AdhaarCard) error {
+	createdAt := time.Now()
+	updatedAt := time.Now()
+	const votingAge = 18
+	dob, err := time.Parse("2006-01-02", aadhaarCard.DOB)
+	if err != nil {
+		fmt.Println("Error parsing DOB:", err)
+	}
+	// Calculate age
+	age := calculateAge(dob)
 
+	eligibleForVoting := age >= votingAge
+
+	voterDoc := models.Voter{
+		ID:           primitive.NewObjectID(),
+		Name:         aadhaarCard.Name,
+		AdhaarNumber: aadhaarCard.UID,
+		Phone:        aadhaarCard.Mobile,
+		DateOfBirth:  aadhaarCard.DOB,
+		Gender:       aadhaarCard.Gender,
+		IsEligible:   eligibleForVoting,
+		IsVoted:      false,
+		CreatedAt:    createdAt,
+		UpdatedAt:    updatedAt,
+	}
+
+	_, err = voterCollection.InsertOne(context.Background(), voterDoc)
+	return err
+}
+
+func calculateAge(dob time.Time) int {
+	today := time.Now()
+	years := today.Year() - dob.Year()
+	if today.YearDay() < dob.YearDay() {
+		years--
+	}
+	return years
+}

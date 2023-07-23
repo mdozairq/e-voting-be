@@ -1,1 +1,35 @@
-.env
+# Ignore build and binary files
+*.exe
+*.o
+*.so
+*.dll
+*.env
+
+# Ignore editor and IDE files
+.vscode/
+.idea/
+
+# Ignore dependencies and build output directories
+node_modules/
+vendor/
+dist/
+build/
+
+# Ignore log and cache files
+logs/
+.cache/
+
+# Ignore sensitive files containing credentials or API keys
+secrets.env
+
+# Ignore compiled files
+*.pyc
+*.class
+
+# Ignore OS-specific files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary files
+*.tmp
+*.bak
