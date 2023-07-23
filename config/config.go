@@ -23,6 +23,11 @@ type DBConfig struct {
 	Dbname   string
 }
 
+type TwilioConfig struct {
+	Sid       string
+	AuthToken string
+}
+
 // NewServerConfig returns a pointer to a new ServerConfig struct initialized with values from environment variables.
 func NewServerConfig() *ServerConfig {
 	return &ServerConfig{
@@ -42,6 +47,13 @@ func NewDBConfig() *DBConfig {
 		Username: os.Getenv("DB_USERNAME"),
 		Password: os.Getenv("DB_PASSWORD"),
 		Dbname:   os.Getenv("DB_NAME"),
+	}
+}
+
+func NewTwilioConfig() *TwilioConfig {
+	return &TwilioConfig{
+		Sid:       os.Getenv("TWILIO_SID"),
+		AuthToken: os.Getenv("TWILIO_AUTH_TOKEN"),
 	}
 }
 

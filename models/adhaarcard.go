@@ -3,7 +3,7 @@ package models
 
 // AadhaarCard represents the data structure for an Aadhaar card.
 type AdhaarCard struct {
-	UID      string `json:"_id" validate:"required,len=12"`
+	UID      string `json:"uid" validate:"required,len=12"`
 	Name     string `json:"name" validate:"required"`
 	DOB      string `json:"dob" validate:"required,date"`
 	Gender   string `json:"gender" validate:"required,oneof=M F O"`
