@@ -1,16 +1,17 @@
 package routes
 
 import (
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 	controllers "github.com/mdozairq/e-voting-be/controllers"
 )
 
-func CandidateRoutes(incominRoutes *gin.Engine){
-	incominRoutes.GET("/candidate", controllers.Getcandidates())
-	incominRoutes.POST("/candidate/signup", controllers.SignUpCandidate())
-	incominRoutes.POST("/candidate/signin", controllers.SignInCandidate())
-	incominRoutes.GET("/candidate/:id", controllers.GetCandidate())
-	incominRoutes.PATCH("/candidate/:id", controllers.UpdateCandidate())
-
-
+func CandidateRoutes(superRoute *gin.RouterGroup) {
+	cnadidateRouters := superRoute.Group("/candidate")
+	{
+		cnadidateRouters.GET("/candidates", controllers.Getcandidates())
+		cnadidateRouters.POST("/candidate/signup", controllers.SignUpCandidate())
+		cnadidateRouters.POST("/candidate/signin", controllers.SignInCandidate())
+		cnadidateRouters.GET("/candidate/:id", controllers.GetCandidate())
+		cnadidateRouters.PATCH("/candidate/:id", controllers.UpdateCandidate())
+	}
 }

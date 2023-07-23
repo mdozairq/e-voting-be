@@ -1,11 +1,9 @@
-package middlewares
+package controllers
 
 import "github.com/gin-gonic/gin"
 
-
-
-func Auth() gin.HandlerFunc{ 
+func SignInAdmin() gin.HandlerFunc{
 	return func(c *gin.Context){
-			
+
 	}
 }

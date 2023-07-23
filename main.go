@@ -1,28 +1,30 @@
-
 package main
 
 import (
 	"os"
-	"github.com/gin-gonic/gin"
-	"github.com/mdozairq/e-voting-be/database"
-	"github.com/mdozairq/e-voting-be/routes"
-	"github.com/mdozairq/e-voting-be/middlewares"
-	"go.mongodb.org/mongo-driver/mongo"
-)
 
-var voterCollection *mongo.Collection = database.OpenCollection(database.Client, "voter")
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
+	"github.com/mdozairq/e-voting-be/helpers"
+	"github.com/mdozairq/e-voting-be/routes"
+)
 
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
-			port = "8080"
-		}
+		port = "8080"
+	}
 
-	router := gin.new()
+	router := gin.New()
+	// router.Use(ResponseInterceptor())
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	router.Use(middlewares.Auth())
-	router.voterRoutes(router)
+	router.Use(cors.Default())
+	router.Use(helpers.ResponseInterceptor())
+	// router.Use(middlewares.Auth())
+	allRoute := router.Group("/e-voting")
+	routes.AddRoutes(allRoute)
 
-	router.Run(":"+port)
+	router.Run(":" + port)
+
 }
