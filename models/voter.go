@@ -7,13 +7,13 @@ import (
 
 type Voter struct {
 	ID           primitive.ObjectID `bson:"_id"`
-	Name         string            `json:"name" validate:"required,min=2,max=100"`
-	AdhaarNumber string            `json:"adhaar_number" validate:"required,min=12`
-	Phone        string            `json:"phone" validate:"regexp=(0|\+91|091|91)[0-9]+$"`
-	DateOfBirth  string            `json:"date_of_birth" validate:"required"`
-	Gender       string            `json:"gender" validate:"required,eq=MALE|eq=FEMALE"`
-	IsEligible   bool              `json:"is_eligible" validate:"required`
-	IsVoted      bool              `json:"is_voted" validate:"required"`
-	CreatedAt    time.Time          `json:"created_at" validate:"required"`
-	UpdatedAt    time.Time          `json:"updated_at" validate:"required"`
+	Name         string             `bson:"name" validate:"required,min=2,max=100"`
+	AdhaarNumber string             `bson:"adhaar_number" validate:"required,min=12`
+	Phone        string             `bson:"phone" validate:"regexp=(0|\+91|091|91)[0-9]+$"`
+	DateOfBirth  string             `bson:"date_of_birth" validate:"required"`
+	Gender       string             `bson:"gender" validate:"required,eq=MALE|eq=FEMALE"`
+	IsEligible   bool               `bson:"is_eligible" validate:"required`
+	IsVoted      bool               `bson:"is_voted" validate:"required"`
+	CreatedAt    time.Time          `bson:"created_at" validate:"required"`
+	UpdatedAt    time.Time          `bson:"updated_at" validate:"required"`
 }

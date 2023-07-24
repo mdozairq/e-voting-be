@@ -3,16 +3,16 @@ package models
 
 // AadhaarCard represents the data structure for an Aadhaar card.
 type AdhaarCard struct {
-	UID      string `json:"uid" validate:"required,len=12"`
-	Name     string `json:"name" validate:"required"`
-	DOB      string `json:"dob" validate:"required,date"`
-	Gender   string `json:"gender" validate:"required,oneof=M F O"`
-	City     string `json:"city" validate:"required"`
-	State    string `json:"state" validate:"required"`
-	Country  string `json:"country" validate:"required"`
-	Street   string `json:"street" validate:"required"`
-	PhotoURL string `json:"photo_url" validate:"required,url"`
-	Mobile   string `json:"mobile" validate:"required,numeric,len=10"`
-	Email    string `json:"email,omitempty" validate:"omitempty,email"`
-	Issuer   string `json:"issuer" validate:"required"`
+	UID      string `bson:"uid" validate:"required,len=12"`
+	Name     string `bson:"name" validate:"required"`
+	DOB      string `bson:"dob" validate:"required,date"`
+	Gender   string `bson:"gender" validate:"required,oneof=M F O"`
+	City     string `bson:"city" validate:"required"`
+	State    string `bson:"state" validate:"required"`
+	Country  string `bson:"country" validate:"required"`
+	Street   string `bson:"street" validate:"required"`
+	PhotoURL string `json:"photo_url" bson:"photo_url" validate:"required"`
+	Mobile   string `bson:"mobile" validate:"required,numeric,len=10"`
+	Email    string `bson:"email,omitempty" validate:"omitempty,email"`
+	Issuer   string `bson:"issuer" validate:"required"`
 }

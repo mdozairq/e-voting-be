@@ -63,12 +63,6 @@ func GetVoter() gin.HandlerFunc {
 	}
 }
 
-func SignUpVoter() gin.HandlerFunc {
-	return func(c *gin.Context) {
-
-	}
-}
-
 func SignInVoter() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
@@ -161,9 +155,9 @@ func AddAdhaaarCard() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-
-		count, err := adhaarCardCollection.CountDocuments(ctx, bson.M{"uid": aadhaar.UID})
 		defer cancel()
+		count, err := adhaarCardCollection.CountDocuments(ctx, bson.M{"uid": aadhaar.UID})
+		
 		if err != nil {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "error occured while checking for the adhaar card"})
@@ -215,7 +209,7 @@ func VerifyOTP() gin.HandlerFunc {
 		utils.LogInfo(userOtp.OTP)
 		utils.LogInfo(userOtp.UID)
 
-		err := voterCollection.FindOne(ctx, bson.M{"adhaarnumber": userOtp.UID}).Decode(&foundVoter)
+		err := voterCollection.FindOne(ctx, bson.M{"adhaar_number": userOtp.UID}).Decode(&foundVoter)
 		defer cancel()
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "adhaarcard not found, uid number seems to be incorrect"})

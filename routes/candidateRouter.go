@@ -8,10 +8,10 @@ import (
 func CandidateRoutes(superRoute *gin.RouterGroup) {
 	cnadidateRouters := superRoute.Group("/candidate")
 	{
-		cnadidateRouters.GET("/candidates", controllers.Getcandidates())
-		cnadidateRouters.POST("/candidate/signup", controllers.SignUpCandidate())
-		cnadidateRouters.POST("/candidate/signin", controllers.SignInCandidate())
-		cnadidateRouters.GET("/candidate/:id", controllers.GetCandidate())
-		cnadidateRouters.PATCH("/candidate/:id", controllers.UpdateCandidate())
+		cnadidateRouters.GET("/", controllers.GetCandidates())
+		cnadidateRouters.POST("/signup", controllers.SignUpCandidate())
+		cnadidateRouters.POST("/signin", controllers.SignInCandidate())
+		cnadidateRouters.GET("/:id", controllers.GetCandidate())
+		cnadidateRouters.PATCH("/:id", controllers.UpdateCandidate())
 	}
 }

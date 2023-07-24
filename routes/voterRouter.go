@@ -10,7 +10,6 @@ func VoterRoutes(superRoute *gin.RouterGroup) {
 	{
 		votersRouter.GET("/", controllers.GetVoters())
 		votersRouter.POST("/adhaar", controllers.AddAdhaaarCard() )
-		votersRouter.POST("/signup", controllers.SignUpVoter())
 		votersRouter.POST("/signin", controllers.SignInVoter())
 		votersRouter.POST("/verify", controllers.VerifyOTP())
 		votersRouter.GET("/:id", controllers.GetVoter())
