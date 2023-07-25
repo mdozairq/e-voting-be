@@ -140,7 +140,7 @@ func SignInVoter() gin.HandlerFunc {
 
 func AddAdhaaarCard() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// var existingAdhaar models.AdhaarCard
+
 		var aadhaar models.AdhaarCard
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 
@@ -149,7 +149,6 @@ func AddAdhaaarCard() gin.HandlerFunc {
 			return
 		}
 
-		// Validate Aadhaar card data
 		validate := InitializeValidator()
 		if err := validate.Struct(aadhaar); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -170,7 +169,7 @@ func AddAdhaaarCard() gin.HandlerFunc {
 		}
 
 		fmt.Println("adhadar", aadhaar)
-		// Parse DOB from the custom layout
+		
 		dob, err := time.Parse(dobLayout, aadhaar.DOB)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date of birth format"})
@@ -179,7 +178,6 @@ func AddAdhaaarCard() gin.HandlerFunc {
 
 		aadhaar.DOB = dob.Format(dobLayout)
 
-		// Insert Aadhaar card data into MongoDB
 		_, insertErr := adhaarCardCollection.InsertOne(ctx, aadhaar)
 		if insertErr != nil {
 			msg := fmt.Sprintf("nexVoter item was not created")
@@ -196,7 +194,7 @@ func AddAdhaaarCard() gin.HandlerFunc {
 func VerifyOTP() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-		// Get the UID, phone number, and OTP from the request
+		
 
 		var userOtp models.OTP
 		var foundVoter models.Voter
@@ -218,7 +216,6 @@ func VerifyOTP() gin.HandlerFunc {
 
 		opts := options.FindOne().SetSort(bson.M{"created_at": -1})
 
-		// Fetch OTP document from the OTP collection based on UID and phone number
 		var otpDoc models.OTP
 		err = otpCollection.FindOne(ctx, bson.M{"uid": foundVoter.AdhaarNumber, "phone_number": foundVoter.Phone}, opts).Decode(&otpDoc)
 		if err != nil {
@@ -226,13 +223,11 @@ func VerifyOTP() gin.HandlerFunc {
 			return
 		}
 
-		// Check if OTP is expired
 		if time.Now().After(otpDoc.Expiration) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "OTP expired"})
 			return
 		}
 
-		// Compare the user-provided OTP with the stored OTP
 		if otpDoc.OTP != userOtp.OTP {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid OTP"})
 			return
@@ -240,25 +235,19 @@ func VerifyOTP() gin.HandlerFunc {
 
 		token, refreshToken, _ := helpers.GenerateAllTokens(foundVoter, "voter")
 
-		//update tokens - token and refersh token
 		helpers.UpdateAllTokens(token, refreshToken, foundVoter.ID.Hex())
 
-		//return statusOK
 		c.JSON(http.StatusOK, gin.H{"refresh_token": refreshToken, "token": token})
-
-		// c.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully"})
 	}
 }
 
-// GenerateOTP generates a 4-digit random OTP.
 func GenerateOTP() string {
 	rand.Seed(time.Now().UnixNano())
 	return fmt.Sprintf("%04d", rand.Intn(10000))
 }
 
-// SaveOTP saves the OTP, UID, and phone number to the OTP collection.
 func SaveOTP(uid, phoneNumber, otp string) error {
-	expiration := time.Now().Add(5 * time.Minute) // Set OTP expiration to 5 minutes from now
+	expiration := time.Now().Add(5 * time.Minute) 
 	createdAt := time.Now()
 
 	otpDoc := models.OTP{

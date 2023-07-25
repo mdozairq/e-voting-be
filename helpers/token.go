@@ -29,9 +29,37 @@ type VoterSignedDetails struct {
 	jwt.StandardClaims
 }
 
+type AdminDetails struct {
+	AdminToken string
+	Email      string
+	Role       string
+	jwt.StandardClaims
+}
+
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
+
+func GenerateAdminToken(email string, adminAuthToken string, role string) (signedToken string, err error) {
+	// Create a new token object with a signing method
+	AdminClaim := &AdminDetails{
+		AdminToken: adminAuthToken,
+		Email:      email,
+		Role:       role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, AdminClaim)
+
+	// Sign the token with the admin's authentication token (secret)
+	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, err
+}
 
 func GenerateAllTokens(voter models.Voter, role string) (signedToken string, signedRefreshToken string, err error) {
 	claims := &VoterSignedDetails{
@@ -112,8 +140,6 @@ func ValidateToken(signedToken string) (claims *VoterSignedDetails, msg string) 
 			return []byte(SECRET_KEY), nil
 		},
 	)
-
-	//the token is invalid
 
 	claims, ok := token.Claims.(*VoterSignedDetails)
 	if !ok {

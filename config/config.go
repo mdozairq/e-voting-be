@@ -28,6 +28,12 @@ type TwilioConfig struct {
 	AuthToken string
 }
 
+type AdminConfig struct {
+	AdminEmail string
+	AdminPassword string
+	AdminAuthToken string
+}
+
 // NewServerConfig returns a pointer to a new ServerConfig struct initialized with values from environment variables.
 func NewServerConfig() *ServerConfig {
 	return &ServerConfig{
@@ -54,6 +60,14 @@ func NewTwilioConfig() *TwilioConfig {
 	return &TwilioConfig{
 		Sid:       os.Getenv("TWILIO_SID"),
 		AuthToken: os.Getenv("TWILIO_AUTH_TOKEN"),
+	}
+}
+
+func NewAdminConfig() *AdminConfig {
+	return &AdminConfig{
+		AdminEmail: os.Getenv("ADMIN_EMAIL"),
+		AdminPassword: os.Getenv("ADMIN_PASSWORD"),
+		AdminAuthToken: os.Getenv("ADMIN_AUTH_TOKEN"),
 	}
 }
 

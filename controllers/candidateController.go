@@ -131,7 +131,7 @@ func SignUpCandidate() gin.HandlerFunc {
 			return
 		}
 
-		//create some extra details for the candidate object - created_at, updated_at, ID
+		
 		createdAt := time.Now()
 		updatedAt := time.Now()
 		candidateID := primitive.NewObjectID()
@@ -165,10 +165,10 @@ func SignUpCandidate() gin.HandlerFunc {
 
 		token, refreshToken, _ := helpers.GenerateAllTokens(voter, "candidate")
 
-		//update tokens - token and refersh token
+		
 		helpers.UpdateAllTokens(token, refreshToken, voter.ID.Hex())
 
-		//return statusOK
+		
 		c.JSON(http.StatusOK, gin.H{"refresh_token": refreshToken, "token": token})
 	}
 }
@@ -179,20 +179,20 @@ func SignInCandidate() gin.HandlerFunc {
 		var requestedCandidate SignInCandidateDto
 		var foundCandidate models.Candidate
 		var voter models.Voter
-		// Convert the JSON data coming from the client to something that Golang understands
+		
 		if err := c.BindJSON(&requestedCandidate); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Validate the data based on the CandidateDto struct
+		
 		validationErr := validate.Struct(&requestedCandidate)
 		if validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
 			return
 		}
 
-		// You'll check if the candidate exists based on their adhaar_number
+		
 		err := candidateCollection.FindOne(ctx, bson.M{"username": requestedCandidate.Username}).Decode(&foundCandidate)
 		defer cancel()
 		if err != nil {
@@ -200,7 +200,7 @@ func SignInCandidate() gin.HandlerFunc {
 			return
 		}
 
-		// Verify the provided password with the stored hash
+		
 		isValidPassword, msg := VerifyPassword(foundCandidate.Password, requestedCandidate.Password)
 		if !isValidPassword {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
@@ -219,13 +219,13 @@ func SignInCandidate() gin.HandlerFunc {
 			return
 		}
 
-		// Generate the JWT token for the candidate
+		
 		token, refreshToken, _ := helpers.GenerateAllTokens(voter, "candidate")
 
-		//update tokens - token and refersh token
+		
 		helpers.UpdateAllTokens(token, refreshToken, voter.ID.Hex())
 
-		// Return the token to the client
+		
 		c.JSON(http.StatusOK, gin.H{"token": token})
 	}
 }
