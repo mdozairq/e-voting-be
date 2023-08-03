@@ -5,6 +5,7 @@
 *.dll
 *.env
 
+
 # Ignore editor and IDE files
 .vscode/
 .idea/
@@ -18,7 +19,7 @@ build/
 # Ignore log and cache files
 logs/
 .cache/
-
+mongodata/
 # Ignore sensitive files containing credentials or API keys
 secrets.env
 
