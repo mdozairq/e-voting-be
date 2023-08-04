@@ -9,7 +9,7 @@ import (
 func CandidateRoutes(superRoute *gin.RouterGroup) {
 	cnadidateRouters := superRoute.Group("/candidate")
 	{
-		cnadidateRouters.GET("/", middlewares.Authentication(), controllers.GetCandidates())
+		cnadidateRouters.GET("/", middlewares.CandidateTokenAuthMiddleware(), controllers.GetCandidates())
 		cnadidateRouters.POST("/signup", controllers.SignUpCandidate())
 		cnadidateRouters.POST("/signin", controllers.SignInCandidate())
 		cnadidateRouters.GET("/:id", controllers.GetCandidate())

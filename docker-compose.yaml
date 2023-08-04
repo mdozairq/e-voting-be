@@ -1,18 +1,25 @@
-version: "3.4"
+version: '3.8'
 services:
-  mongo:
-        image: 'mongo:4.4'
-        container_name: mongo
-        ports:
-            - '27017:27017'
-        volumes:
-            - ./mongodata:/data/db
-        restart: always
-  web:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - app-network
+
+  web-server:
     build: .
+    container_name: web-server
     ports:
       - "8080:8080"
     depends_on:
-      - mongo
+      - mongodb
     environment:
-           MONGODB_URI: mongodb://localhost:27017
+      - MONGODB_URI=mongodb://mongodb:27017
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

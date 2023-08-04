@@ -41,7 +41,6 @@ var userCollection *mongo.Collection = database.OpenCollection(database.Client, 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 
 func GenerateAdminToken(email string, adminAuthToken string, role string) (signedToken string, err error) {
-	// Create a new token object with a signing method
 	AdminClaim := &AdminDetails{
 		AdminToken: adminAuthToken,
 		Email:      email,
@@ -97,8 +96,6 @@ func GenerateAllTokens(voter models.Voter, role string) (signedToken string, sig
 
 func UpdateAllTokens(signedToken string, signedRefreshToken string, userId string) {
 
-	// var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-
 	var updateObj primitive.D
 
 	updateObj = append(updateObj, bson.E{"token", signedToken})
@@ -107,28 +104,7 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, userId strin
 	Updated_at, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 	updateObj = append(updateObj, bson.E{"updated_at", Updated_at})
 
-	// upsert := true
-	// filter := bson.M{"user_id": userId}
-	// opt := options.UpdateOptions{
-	// 	Upsert: &upsert,
-	// }
-
-	// _, err := userCollection.UpdateOne(
-	// 	ctx,
-	// 	filter,
-	// 	bson.D{
-	// 		{"$set", updateObj},
-	// 	},
-	// 	&opt,
-	// )
-	// defer cancel()
-
-	// if err != nil {
-	// 	log.Panic(err)
-	// 	return
-	// }
 	return
-
 }
 
 func ValidateToken(signedToken string) (claims *VoterSignedDetails, msg string) {
@@ -146,6 +122,34 @@ func ValidateToken(signedToken string) (claims *VoterSignedDetails, msg string) 
 		msg = fmt.Sprintf("the token is invalid")
 		msg = err.Error()
 		return
+	}
+
+	//the token is expired
+	if claims.ExpiresAt < time.Now().Local().Unix() {
+		msg = fmt.Sprint("token is expired")
+		msg = err.Error()
+		return
+	}
+
+	return claims, msg
+
+}
+
+func AdminValidateToken(signedToken string) (claims *AdminDetails, msg string) {
+
+	token, err := jwt.ParseWithClaims(
+		signedToken,
+		&AdminDetails{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(SECRET_KEY), nil
+		},
+	)
+
+	claims, ok := token.Claims.(*AdminDetails)
+	if !ok {
+		msg = fmt.Sprintf("the token is invalid")
+		msg = err.Error()
+		return 
 	}
 
 	//the token is expired

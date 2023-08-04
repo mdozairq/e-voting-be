@@ -8,43 +8,66 @@ import (
 	"github.com/mdozairq/e-voting-be/app/helpers"
 )
 
-// AdminAuthMiddleware is a custom middleware to validate the admin token
-func AdminAuthMiddleware() gin.HandlerFunc {
+// VoterTokenAuthMiddleware verifies the voter token
+func VoterTokenAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		adminAuthToken := c.GetHeader("Authorization")
-
-		// Replace "YOUR_ADMIN_AUTH_TOKEN" with your actual admin authentication token
-		if adminAuthToken != "YOUR_ADMIN_AUTH_TOKEN" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
-			return
-		}
-
-		// Continue to the next middleware or API handler
-		c.Next()
-	}
-}
-
-func Authentication() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		clientToken := c.Request.Header.Get("token")
-		if clientToken == "" {
+		voterToken := c.Request.Header.Get("Authorization")
+		if voterToken == "" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("No Authorization header provided")})
 			c.Abort()
 			return
 		}
 
-		_, err := helpers.ValidateToken(clientToken)
+		_, err := helpers.ValidateToken(voterToken)
 		if err != "" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			c.Abort()
 			return
 		}
 
-		// c.Set("email", claims.Email)
-		// c.Set("first_name", claims.First_name)
-		// c.Set("last_name", claims.Last_name)
-		// c.Set("uid", claims.Uid)
+		c.Next()
+
+	}
+}
+
+// CandidateTokenAuthMiddleware verifies the candidate token
+func CandidateTokenAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		candidateToken := c.Request.Header.Get("Authorization")
+		if candidateToken == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("No Authorization header provided")})
+			c.Abort()
+			return
+		}
+
+		_, err := helpers.ValidateToken(candidateToken)
+		if err != "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			c.Abort()
+			return
+		}
+
+		c.Next()
+	}
+}
+
+// AdminTokenAuthMiddleware verifies the admin token
+func AdminTokenAuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		adminToken := c.Request.Header.Get("Authorization")
+		fmt.Print(adminToken)
+		if adminToken == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("No Authorization header provided")})
+			c.Abort()
+			return
+		}
+
+		_, err := helpers.AdminValidateToken(adminToken)
+		if err != "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}
