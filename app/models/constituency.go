@@ -5,10 +5,10 @@ import (
 )
 
 type Constituency struct {
-	ID       primitive.ObjectID `bson:"_id,omitempty"`
-	City     string            `bson:"city"`
-	District string            `bson:"district"`
-	State    string            `bson:"state"`
-	Country  string            `bson:"country"`
-	PinCode  string            `bson:"pincode"`
+	ID       primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	City     string            `bson:"city" json:"city,omitempty"`
+	District string            `bson:"district" json:"district,omitempty"`
+	State    string            `bson:"state" json:"state,omitempty"`
+	Country  string            `bson:"country" json:"country,omitempty"`
+	PinCode  string            `bson:"pincode" json:"pincode,omitempty"`
 }

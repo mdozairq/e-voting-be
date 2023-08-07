@@ -11,6 +11,10 @@ func AdminRoutes(superRoute *gin.RouterGroup) {
 	{
 		adminRouters.POST("/signin", controllers.SignInAdmin())
 		adminRouters.POST("/election/initialize", middlewares.AdminTokenAuthMiddleware(), controllers.InitializeElection())
+		adminRouters.GET("/election/all", middlewares.AdminTokenAuthMiddleware(), controllers.GetAllElections())
+		adminRouters.GET("/election/:id", middlewares.AdminTokenAuthMiddleware(), controllers.GetElectionByID())
+		adminRouters.GET("/constituency/all", middlewares.AdminTokenAuthMiddleware(), controllers.GetAllConstituencies())
+		adminRouters.GET("/constituency/:id", middlewares.AdminTokenAuthMiddleware(), controllers.GetConstituencyByID())
 	}
 
 }
