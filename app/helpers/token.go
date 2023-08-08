@@ -8,8 +8,8 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/mdozairq/e-voting-be/database"
 	"github.com/mdozairq/e-voting-be/app/models"
+	"github.com/mdozairq/e-voting-be/database"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,6 +33,23 @@ type AdminDetails struct {
 	AdminToken string
 	Email      string
 	Role       string
+	jwt.StandardClaims
+}
+
+type CandidateClaims struct {
+	CandidateID    primitive.ObjectID `json:"candidate_id"`
+	VoterID        primitive.ObjectID `json:"voter_id"`
+	Name           string             `json:"name"`
+	AdhaarNumber   string             `json:"adhaar_number"`
+	Phone          string             `json:"phone"`
+	Gender         string             `json:"gender"`
+	IsEligible     bool               `json:"is_eligible"`
+	IsVoted        bool               `json:"is_voted"`
+	IsRegistered   bool               `json:"is_registered"`
+	ElectionID     string             `json:"election_id"`
+	PartyID        string             `json:"party_id"`
+	HasCrimeRecord bool               `json:"has_crime_record"`
+	Role           string             `json:"role"`
 	jwt.StandardClaims
 }
 
@@ -60,7 +77,7 @@ func GenerateAdminToken(email string, adminAuthToken string, role string) (signe
 	return tokenString, err
 }
 
-func GenerateAllTokens(voter models.Voter, role string) (signedToken string, signedRefreshToken string, err error) {
+func GenerateVoterTokens(voter models.Voter, role string) (signedToken string, signedRefreshToken string, err error) {
 	claims := &VoterSignedDetails{
 		ID:           voter.ID,
 		Name:         voter.Name,
@@ -71,6 +88,44 @@ func GenerateAllTokens(voter models.Voter, role string) (signedToken string, sig
 		IsEligible:   voter.IsEligible,
 		IsVoted:      voter.IsVoted,
 		Role:         role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
+		},
+	}
+
+	refreshClaims := &VoterSignedDetails{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(168)).Unix(),
+		},
+	}
+
+	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(SECRET_KEY))
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims).SignedString([]byte(SECRET_KEY))
+
+	if err != nil {
+		log.Panic(err)
+		return
+	}
+
+	return token, refreshToken, err
+
+}
+
+func GenerateCandidateTokens(candidate models.Candidate, voter models.Voter, role string) (signedToken string, signedRefreshToken string, err error) {
+	claims := &CandidateClaims{
+		CandidateID:    candidate.ID,
+		VoterID:        voter.ID,
+		Name:           voter.Name,
+		AdhaarNumber:   voter.AdhaarNumber,
+		Phone:          voter.Phone,
+		Gender:         voter.Gender,
+		IsEligible:     voter.IsEligible,
+		IsVoted:        voter.IsVoted,
+		IsRegistered:   candidate.IsRegistered,
+		ElectionID:     candidate.ElectionID,
+		PartyID:        candidate.PartyID,
+		HasCrimeRecord: candidate.HasCrimeRecords,
+		Role:           role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(24)).Unix(),
 		},
@@ -149,7 +204,7 @@ func AdminValidateToken(signedToken string) (claims *AdminDetails, msg string) {
 	if !ok {
 		msg = fmt.Sprintf("the token is invalid")
 		msg = err.Error()
-		return 
+		return
 	}
 
 	//the token is expired

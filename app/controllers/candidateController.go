@@ -10,9 +10,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/mdozairq/e-voting-be/database"
 	"github.com/mdozairq/e-voting-be/app/helpers"
 	"github.com/mdozairq/e-voting-be/app/models"
+	"github.com/mdozairq/e-voting-be/database"
 	"github.com/mdozairq/e-voting-be/utils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -70,9 +70,7 @@ func GetCandidates() gin.HandlerFunc {
 			return
 		}
 
-		
 		defer cancel()
-		
 
 		var allCandidates []bson.M
 		if err = result.All(ctx, &allCandidates); err != nil {
@@ -81,7 +79,6 @@ func GetCandidates() gin.HandlerFunc {
 		c.JSON(http.StatusOK, allCandidates[0])
 	}
 }
-
 
 func SignUpCandidate() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -131,7 +128,6 @@ func SignUpCandidate() gin.HandlerFunc {
 			return
 		}
 
-		
 		createdAt := time.Now()
 		updatedAt := time.Now()
 		candidateID := primitive.NewObjectID()
@@ -163,12 +159,10 @@ func SignUpCandidate() gin.HandlerFunc {
 		}
 		defer cancel()
 
-		token, refreshToken, _ := helpers.GenerateAllTokens(voter, "candidate")
+		token, refreshToken, _ := helpers.GenerateCandidateTokens(createCandidate, voter, "candidate")
 
-		
 		helpers.UpdateAllTokens(token, refreshToken, voter.ID.Hex())
 
-		
 		c.JSON(http.StatusOK, gin.H{"refresh_token": refreshToken, "token": token})
 	}
 }
@@ -179,20 +173,18 @@ func SignInCandidate() gin.HandlerFunc {
 		var requestedCandidate SignInCandidateDto
 		var foundCandidate models.Candidate
 		var voter models.Voter
-		
+
 		if err := c.BindJSON(&requestedCandidate); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		
 		validationErr := validate.Struct(&requestedCandidate)
 		if validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
 			return
 		}
 
-		
 		err := candidateCollection.FindOne(ctx, bson.M{"username": requestedCandidate.Username}).Decode(&foundCandidate)
 		defer cancel()
 		if err != nil {
@@ -200,7 +192,6 @@ func SignInCandidate() gin.HandlerFunc {
 			return
 		}
 
-		
 		isValidPassword, msg := VerifyPassword(foundCandidate.Password, requestedCandidate.Password)
 		if !isValidPassword {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
@@ -219,13 +210,10 @@ func SignInCandidate() gin.HandlerFunc {
 			return
 		}
 
-		
-		token, refreshToken, _ := helpers.GenerateAllTokens(voter, "candidate")
+		token, refreshToken, _ := helpers.GenerateCandidateTokens(foundCandidate, voter, "candidate")
 
-		
 		helpers.UpdateAllTokens(token, refreshToken, voter.ID.Hex())
 
-		
 		c.JSON(http.StatusOK, gin.H{"token": token})
 	}
 }

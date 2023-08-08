@@ -238,4 +238,38 @@ func GetElectionByID() gin.HandlerFunc {
 			c.JSON(http.StatusOK, election)
 		}
 	}
+
+}
+
+func GetRegistrationElections() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Assuming you have a MongoDB client and a collection reference named "electionCollection"
+		// You need to pass your MongoDB client and collection reference as arguments to this function.
+
+		// Create a MongoDB context
+		ctx := context.Background()
+
+		// Query elections with the "REGISTRATION" phase
+		filter := bson.D{{"election_phase", "REGISTRATION"}}
+		cursor, err := electionCollection.Find(ctx, filter)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch elections"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		// Decode the results into a slice of Election
+		var registrationElections []models.Election
+		for cursor.Next(ctx) {
+			var election models.Election
+			err := cursor.Decode(&election)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode results"})
+				return
+			}
+			registrationElections = append(registrationElections, election)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"elections": registrationElections})
+	}
 }

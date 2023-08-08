@@ -266,7 +266,7 @@ func VerifyOTP() gin.HandlerFunc {
 			return
 		}
 
-		token, refreshToken, _ := helpers.GenerateAllTokens(foundVoter, "voter")
+		token, refreshToken, _ := helpers.GenerateVoterTokens(foundVoter, "voter")
 
 		helpers.UpdateAllTokens(token, refreshToken, foundVoter.ID.Hex())
 
