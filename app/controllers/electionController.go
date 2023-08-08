@@ -22,6 +22,7 @@ type InitializeElectionDto struct {
 	ElectionName string    `json:"election_name" validate:"required,min=2,max=100"`
 	Description  string    `json:"description" validate:"required,min=2,max=100"`
 	ElectionType string    `json:"election_type" validate:"required,oneof=GENERAL STATE MUNICIPAL PANCHAYAT"`
+	Constituency string    `bson:"constituency" json:"constituency" validate:"required"`
 	StartDate    time.Time `json:"start_date" validate:"required"`
 	EndDate      time.Time `json:"end_date" validate:"required"`
 	ElectionYear string    `json:"election_year" validate:"required"`
@@ -59,6 +60,7 @@ func InitializeElection() gin.HandlerFunc {
 			ElectionName:  input.ElectionName,
 			Description:   input.Description,
 			ElectionType:  input.ElectionType,
+			Constituency:  input.Constituency,
 			StartDate:     input.StartDate,
 			EndDate:       input.EndDate,
 			ElectionYear:  input.ElectionYear,
@@ -74,7 +76,7 @@ func InitializeElection() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"message": "Election initialized successfully"})
+		c.JSON(http.StatusCreated, gin.H{"data": &election, "message": "Election initialized successfully"})
 	}
 }
 
@@ -202,19 +204,19 @@ func GetElectionByID() gin.HandlerFunc {
 
 			// Set the Constituency details in the Election model
 			electionDetails := struct {
-				ID            primitive.ObjectID `bson:"_id" json:"_id"`
-				ElectionName  string             `bson:"election_name" json:"election_name" validate:"required,min=2,max=100"`
-				Description   string             `bson:"description" json:"description" validate:"required,min=2,max=100"`
-				ElectionType  string             `bson:"election_type" json:"election_type" validate:"required,oneof=GENERAL STATE MUNICIPAL PANCHAYAT"`
+				ID            primitive.ObjectID  `bson:"_id" json:"_id"`
+				ElectionName  string              `bson:"election_name" json:"election_name" validate:"required,min=2,max=100"`
+				Description   string              `bson:"description" json:"description" validate:"required,min=2,max=100"`
+				ElectionType  string              `bson:"election_type" json:"election_type" validate:"required,oneof=GENERAL STATE MUNICIPAL PANCHAYAT"`
 				Constituency  models.Constituency `bson:"-" json:"constituency" validate:"required"`
-				StartDate     time.Time          `bson:"start_date" json:"start_date" validate:"required"`
-				EndDate       time.Time          `bson:"end_date" json:"end_date" validate:"required"`
-				ElectionYear  string             `bson:"election_year" json:"election_year" validate:"required"`
-				IsActive      bool               `bson:"is_active" json:"is_active"`
-				IsBypoll      bool               `json:"is_bypoll" json:"is_bypoll" validate:"required"`
-				ElectionPhase string             `json:"election_phase" bson:"election_phase" validate:"required,oneof=INITIALIZATION REGISTRATION VOTING RESULT"`
-				CreatedAt     time.Time          `bson:"created_at" json:"created_at" validate:"required"`
-				UpdatedAt     time.Time          `bson:"updated_at" json:"updated_at" validate:"required"`
+				StartDate     time.Time           `bson:"start_date" json:"start_date" validate:"required"`
+				EndDate       time.Time           `bson:"end_date" json:"end_date" validate:"required"`
+				ElectionYear  string              `bson:"election_year" json:"election_year" validate:"required"`
+				IsActive      bool                `bson:"is_active" json:"is_active"`
+				IsBypoll      bool                `json:"is_bypoll" json:"is_bypoll" validate:"required"`
+				ElectionPhase string              `json:"election_phase" bson:"election_phase" validate:"required,oneof=INITIALIZATION REGISTRATION VOTING RESULT"`
+				CreatedAt     time.Time           `bson:"created_at" json:"created_at" validate:"required"`
+				UpdatedAt     time.Time           `bson:"updated_at" json:"updated_at" validate:"required"`
 			}{
 				ID:            election.ID,
 				ElectionName:  election.ElectionName,
@@ -237,4 +239,3 @@ func GetElectionByID() gin.HandlerFunc {
 		}
 	}
 }
-
