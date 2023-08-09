@@ -13,8 +13,9 @@ func CandidateRoutes(superRoute *gin.RouterGroup) {
 		candidateRouters.POST("/signup", controllers.SignUpCandidate())
 		candidateRouters.POST("/signin", controllers.SignInCandidate())
 		candidateRouters.GET("/:id", controllers.GetCandidate())
-		candidateRouters.PATCH("/:id", controllers.UpdateCandidate())
+		candidateRouters.PUT("/:id", controllers.UpdateCandidate())
 		candidateRouters.GET("/election",  middlewares.CandidateTokenAuthMiddleware(), controllers.GetRegistrationElections())
 		candidateRouters.GET("party/all", middlewares.CandidateTokenAuthMiddleware(), controllers.GetAllParties())
+		candidateRouters.GET("party/:id", middlewares.CandidateTokenAuthMiddleware(), controllers.GetPartyByID())
 	}
 }

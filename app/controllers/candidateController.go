@@ -226,7 +226,35 @@ func GetCandidate() gin.HandlerFunc {
 
 func UpdateCandidate() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Your code to update a candidate...
+		// Get the candidate ID from the request parameters
+		candidateID := c.Param("id")
+		objectID, err := primitive.ObjectIDFromHex(candidateID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid candidate ID"})
+			return
+		}
+
+		// Parse the updated candidate data from the request body
+		var updatedCandidate models.Candidate
+		if err := c.ShouldBindJSON(&updatedCandidate); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Set the updated timestamp
+		updatedCandidate.UpdatedAt = time.Now()
+
+		// Update the candidate in the MongoDB collection
+		ctx := context.Background()
+		update := bson.M{"$set": updatedCandidate}
+		_, err = candidateCollection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+		if err != nil {
+			print()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update candidate"})
+			return
+		}
+
+		c.JSON(http.StatusOK, updatedCandidate)
 	}
 }
 
