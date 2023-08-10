@@ -131,7 +131,7 @@ func GenerateCandidateTokens(candidate models.Candidate, voter models.Voter, rol
 		},
 	}
 
-	refreshClaims := &VoterSignedDetails{
+	refreshClaims := &CandidateClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Local().Add(time.Hour * time.Duration(168)).Unix(),
 		},
@@ -173,6 +173,34 @@ func ValidateToken(signedToken string) (claims *VoterSignedDetails, msg string) 
 	)
 
 	claims, ok := token.Claims.(*VoterSignedDetails)
+	if !ok {
+		msg = fmt.Sprintf("the token is invalid")
+		msg = err.Error()
+		return
+	}
+
+	//the token is expired
+	if claims.ExpiresAt < time.Now().Local().Unix() {
+		msg = fmt.Sprint("token is expired")
+		msg = err.Error()
+		return
+	}
+
+	return claims, msg
+
+}
+
+func ValidateCandidateToken(signedToken string) (claims *CandidateClaims, msg string) {
+
+	token, err := jwt.ParseWithClaims(
+		signedToken,
+		&CandidateClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(SECRET_KEY), nil
+		},
+	)
+
+	claims, ok := token.Claims.(*CandidateClaims)
 	if !ok {
 		msg = fmt.Sprintf("the token is invalid")
 		msg = err.Error()

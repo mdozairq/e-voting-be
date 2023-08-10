@@ -16,7 +16,7 @@ type Candidate struct {
 	PartyID                  string             `bson:"party_id" json:"party_id"`
 	ElectionID               string             `bson:"election_id" json:"election_id"`
 	RegisteredConstituencyID string             `bson:"registered_constituency_id" json:"registered_constituency_id"`
-	Assets                   []string           `bson:"assets" json:"assets"`
+	Assets                   string             `bson:"assets" json:"assets"`
 	HasCrimeRecords          bool               `bson:"has_crime_records" json:"has_crime_records"`
 	IsAccused                bool               `bson:"is_accused" json:"is_accused"`
 	IsEligible               bool               `bson:"is_eligible" json:"is_eligible"`

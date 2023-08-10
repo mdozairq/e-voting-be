@@ -105,6 +105,11 @@ func SignUpCandidate() gin.HandlerFunc {
 			return
 		}
 
+		if !voter.IsEligible {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "voter is not eligible or under age"})
+			return
+		}
+
 		count, err := candidateCollection.CountDocuments(ctx, bson.M{"voter_id": voter.ID})
 		if err != nil {
 			log.Panic(err)
@@ -141,10 +146,10 @@ func SignUpCandidate() gin.HandlerFunc {
 			Password:                 password,
 			PartyID:                  "",
 			RegisteredConstituencyID: "",
-			Assets:                   nil,
+			Assets:                   "",
 			HasCrimeRecords:          false,
 			IsAccused:                false,
-			IsEligible:               false,
+			IsEligible:               voter.IsEligible,
 			IsRegistered:             false,
 			CreatedAt:                createdAt,
 			UpdatedAt:                updatedAt,
@@ -218,9 +223,28 @@ func SignInCandidate() gin.HandlerFunc {
 	}
 }
 
-func GetCandidate() gin.HandlerFunc {
+func GetCandidateByID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Your code to get a candidate...
+		// Get the candidate ID from the request parameters
+		candidateID := c.Param("id")
+		objectID, err := primitive.ObjectIDFromHex(candidateID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid candidate ID"})
+			return
+		}
+
+		// Create a MongoDB context
+		ctx := context.Background()
+
+		// Query the candidate by their ID
+		var candidate models.Candidate
+		err = candidateCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&candidate)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Candidate not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, candidate)
 	}
 }
 
@@ -255,6 +279,57 @@ func UpdateCandidate() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, updatedCandidate)
+	}
+}
+
+func UpdateCandidatePartial() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get the candidate ID from the request parameters
+		candidateID := c.Param("id")
+		objectID, err := primitive.ObjectIDFromHex(candidateID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid candidate ID"})
+			return
+		}
+
+		// Parse the partial candidate data from the request body
+		var partialUpdate models.Candidate
+		if err := c.ShouldBindJSON(&partialUpdate); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Create an update with only the fields you want to update
+		update := bson.M{}
+		if partialUpdate.Assets != "" {
+			update["assets"] = partialUpdate.Assets
+		}
+		if partialUpdate.HasCrimeRecords {
+			update["has_crime_records"] = partialUpdate.HasCrimeRecords
+		}
+		if partialUpdate.IsAccused {
+			update["is_accused"] = partialUpdate.IsAccused
+		}
+		if partialUpdate.RegisteredConstituencyID != "" {
+			update["registered_constituency_id"] = partialUpdate.RegisteredConstituencyID
+		}
+		if partialUpdate.ElectionID != "" {
+			update["election_id"] = partialUpdate.ElectionID
+		}
+		if partialUpdate.PartyID != "" {
+			update["party_id"] = partialUpdate.PartyID
+		}
+		update["updated_at"] = time.Now()
+		update["is_registered"] = true
+		// Update the candidate in the MongoDB collection
+		ctx := context.Background()
+		_, err = candidateCollection.UpdateOne(ctx, bson.M{"_id": objectID}, bson.M{"$set": update})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update candidate"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Candidate updated successfully"})
 	}
 }
 
