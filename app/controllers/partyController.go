@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -36,30 +37,101 @@ func CreateParty() gin.HandlerFunc {
 	}
 }
 
+// func GetAllParties() gin.HandlerFunc {
+// 	return func(c *gin.Context) {
+// 		var parties []models.Party
+
+// 		cursor, err := partyCollection.Find(context.Background(), bson.D{})
+// 		if err != nil {
+// 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch parties"})
+// 			return
+// 		}
+// 		defer cursor.Close(context.Background())
+
+// 		for cursor.Next(context.Background()) {
+// 			var party models.Party
+// 			err := cursor.Decode(&party)
+// 			if err != nil {
+// 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode parties"})
+// 				return
+// 			}
+// 			parties = append(parties, party)
+// 		}
+
+// 		c.JSON(http.StatusOK, parties)
+// 	}
+// }
+
 func GetAllParties() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var parties []models.Party
+		// Get the election ID from the query parameter
+		electionID := c.Query("electionId")
 
-		cursor, err := partyCollection.Find(context.Background(), bson.D{})
+		// Query to find candidates who are registered for the specified election
+		matchCandidatesQuery := bson.D{
+			{"election_id", electionID},
+			{"is_registered", true},
+		}
+
+		// Find candidate documents based on the query
+		var registeredCandidates []models.Candidate
+		candidateCursor, err := candidateCollection.Find(context.Background(), matchCandidatesQuery)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch registered candidates"})
+			return
+		}
+		defer candidateCursor.Close(context.Background())
+
+		// Collect the party IDs of registered candidates
+		var partyIDs []primitive.ObjectID
+		for candidateCursor.Next(context.Background()) {
+			var candidate models.Candidate
+			if err := candidateCursor.Decode(&candidate); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode candidate"})
+				return
+			}
+			partyID, err := primitive.ObjectIDFromHex(candidate.PartyID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid party ID"})
+				return
+			}
+			partyIDs = append(partyIDs, partyID)
+			registeredCandidates = append(registeredCandidates, candidate)
+		}
+		log.Printf("Registered Candidates: %+v", registeredCandidates)
+
+		// Query to find parties excluding those associated with registered candidates
+		matchPartiesQuery := bson.D{
+			{"_id", bson.D{
+				{"$nin", partyIDs},
+			}},
+		}
+
+		// Find party documents based on the query
+		cursor, err := partyCollection.Find(context.Background(), matchPartiesQuery)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch parties"})
 			return
 		}
 		defer cursor.Close(context.Background())
+		log.Printf("Not Registered Query: %+v", matchPartiesQuery)
 
+		// Collect parties that match the query
+		var parties []models.Party
 		for cursor.Next(context.Background()) {
 			var party models.Party
-			err := cursor.Decode(&party)
-			if err != nil {
+			if err := cursor.Decode(&party); err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode parties"})
 				return
 			}
 			parties = append(parties, party)
+			log.Printf("Not Registered Party: %+v", party)
 		}
 
 		c.JSON(http.StatusOK, parties)
 	}
 }
+
 
 func GetPartyByID() gin.HandlerFunc {
 	return func(c *gin.Context) {

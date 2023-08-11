@@ -196,7 +196,7 @@ func AddAdhaaarCard() gin.HandlerFunc {
 	}
 }
 
-func createConstituency(aadhaarCard *models.AdhaarCard)  {
+func createConstituency(aadhaarCard *models.AdhaarCard) {
 	count, err := constituencyCollection.CountDocuments(context.Background(), bson.M{"district": aadhaarCard.City, "state": aadhaarCard.State, "country": aadhaarCard.Country})
 
 	if err != nil {
@@ -222,7 +222,7 @@ func createConstituency(aadhaarCard *models.AdhaarCard)  {
 		log.Panic(err)
 		return
 	}
-	return 
+	return
 }
 
 func VerifyOTP() gin.HandlerFunc {
@@ -332,4 +332,76 @@ func calculateAge(dob time.Time) int {
 		years--
 	}
 	return years
+}
+
+func GetElectionByAadhaarLocation() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		adhaarNumber := c.Query("adhaarNumber")
+
+		// Query Aadhaar card data based on the adhaar number
+		var aadhaar models.AdhaarCard
+		err := adhaarCardCollection.FindOne(context.Background(), bson.M{"uid": adhaarNumber}).Decode(&aadhaar)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch Aadhaar card data"})
+			return
+		}
+
+		// Query Constituency data based on the Aadhaar card state, city, and country
+		var constituency models.Constituency
+		err = constituencyCollection.FindOne(context.Background(), bson.M{
+			"state":   aadhaar.State,
+			"city":    aadhaar.City,
+			"country": aadhaar.Country,
+		}).Decode(&constituency)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch Constituency data"})
+			return
+		}
+		log.Printf("Constituency: %+v", constituency)
+		// Query Election based on the fetched Constituency data and ElectionPhase
+		var election models.Election
+		err = electionCollection.FindOne(context.Background(), bson.M{
+			"constituency":   constituency.ID.Hex(),
+			"election_phase": "VOTING",
+		}).Decode(&election)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "No Election found for the specified location and phase"})
+			return
+		}
+		log.Printf("Election: %+v", election)
+		// Query candidates registered for the specified election
+		var registeredCandidates []models.Candidate
+		candidateCursor, err := candidateCollection.Find(context.Background(), bson.D{
+			{"election_id", election.ID.Hex()},
+			{"is_registered", true},
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch registered candidates"})
+			return
+		}
+		defer candidateCursor.Close(context.Background())
+		for candidateCursor.Next(context.Background()) {
+			var candidate models.Candidate
+			if err := candidateCursor.Decode(&candidate); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode candidate"})
+				return
+			}
+
+			// Populate Party data for each registered candidate
+			var party models.Party
+			err := partyCollection.FindOne(context.Background(), bson.M{"_id": candidate.PartyID}).Decode(&party)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch party data for candidate"})
+				return
+			}
+			log.Printf("Party: %+v", party)
+			candidate.Party = party
+			registeredCandidates = append(registeredCandidates, candidate)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"election":             election,
+			"registeredCandidates": registeredCandidates,
+		})
+	}
 }

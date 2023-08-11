@@ -34,7 +34,6 @@ func VoterTokenAuthMiddleware() gin.HandlerFunc {
 func CandidateTokenAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		candidateToken := c.Request.Header.Get("Authorization")
-		fmt.Print("cc",candidateToken)
 		if candidateToken == "" {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("No Authorization header provided")})
 			c.Abort()

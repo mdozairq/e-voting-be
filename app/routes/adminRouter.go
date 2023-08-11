@@ -15,6 +15,7 @@ func AdminRoutes(superRoute *gin.RouterGroup) {
 		adminRouters.GET("/election/:id", middlewares.AdminTokenAuthMiddleware(), controllers.GetElectionByID())
 		adminRouters.GET("/constituency/all", middlewares.AdminTokenAuthMiddleware(), controllers.GetAllConstituencies())
 		adminRouters.POST("/party/create", middlewares.AdminTokenAuthMiddleware(), controllers.CreateParty())
+		adminRouters.GET("/candidate", middlewares.AdminTokenAuthMiddleware(), controllers.GetCandidatesByElectionID())
 	}
 
 }

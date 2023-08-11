@@ -333,6 +333,40 @@ func UpdateCandidatePartial() gin.HandlerFunc {
 	}
 }
 
+func GetCandidatesByElectionID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get the election ID from the query parameter
+		electionID := c.Query("electionId")
+
+		// Query to find candidates associated with the specified election
+		matchCandidatesQuery := bson.D{
+			{"election_id", electionID},
+		}
+
+		// Find candidate documents based on the query
+		var candidates []models.Candidate
+		cursor, err := candidateCollection.Find(context.Background(), matchCandidatesQuery)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch candidates"})
+			return
+		}
+		defer cursor.Close(context.Background())
+
+		// Collect candidates that match the query
+		for cursor.Next(context.Background()) {
+			var candidate models.Candidate
+			if err := cursor.Decode(&candidate); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode candidates"})
+				return
+			}
+			candidates = append(candidates, candidate)
+		}
+
+		c.JSON(http.StatusOK, candidates)
+	}
+}
+
+
 func HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	if err != nil {
