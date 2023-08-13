@@ -98,13 +98,21 @@ func GetAllParties() gin.HandlerFunc {
 			partyIDs = append(partyIDs, partyID)
 			registeredCandidates = append(registeredCandidates, candidate)
 		}
-		log.Printf("Registered Candidates: %+v", registeredCandidates)
+		log.Printf("Registered Candidates: %+v", partyIDs)
 
 		// Query to find parties excluding those associated with registered candidates
-		matchPartiesQuery := bson.D{
-			{"_id", bson.D{
-				{"$nin", partyIDs},
-			}},
+		var matchPartiesQuery bson.D
+
+		if len(partyIDs) > 0 {
+			matchPartiesQuery = bson.D{
+				{"_id", bson.D{
+					{"$nin", partyIDs},
+				}},
+			}
+		} else {
+			// Handle the case where there are no partyIDs to exclude
+			// For example, you might want to fetch all parties in this case
+			matchPartiesQuery = bson.D{}
 		}
 
 		// Find party documents based on the query
@@ -131,7 +139,6 @@ func GetAllParties() gin.HandlerFunc {
 		c.JSON(http.StatusOK, parties)
 	}
 }
-
 
 func GetPartyByID() gin.HandlerFunc {
 	return func(c *gin.Context) {

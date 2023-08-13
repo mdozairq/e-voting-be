@@ -17,7 +17,7 @@ type Election struct {
 	ElectionYear  string             `bson:"election_year" json:"election_year" validate:"required"`
 	IsActive      bool               `bson:"is_active" json:"is_active"`
 	IsBypoll      bool               `json:"is_bypoll" json:"is_bypoll" validate:"required"`
-	ElectionPhase string             `json:"election_phase" bson:"election_phase" validate:"required,oßneof=INITIALIZATION REGISTRATION VOTING RESULT"`
+	ElectionPhase string             `json:"election_phase" bson:"election_phase" validate:"required,oßneof=INITIALIZATION REGISTRATION VOTING RESULT DECLARED"`
 	CreatedAt     time.Time          `bson:"created_at" json:"created_at" validate:"required"`
 	UpdatedAt     time.Time          `bson:"updated_at" json:"updated_at" validate:"required"`
 }

@@ -386,16 +386,39 @@ func GetElectionByAadhaarLocation() gin.HandlerFunc {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode candidate"})
 				return
 			}
-
+			log.Printf("Candy: %+v", candidate)
 			// Populate Party data for each registered candidate
+			objectID, err := primitive.ObjectIDFromHex(candidate.PartyID)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid constituency ID"})
+				return
+			}
+
 			var party models.Party
-			err := partyCollection.FindOne(context.Background(), bson.M{"_id": candidate.PartyID}).Decode(&party)
+			err = partyCollection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&party)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch party data for candidate"})
 				return
 			}
 			log.Printf("Party: %+v", party)
 			candidate.Party = party
+
+			// Populate Voter data for each registered candidate
+			objectID, err = primitive.ObjectIDFromHex(candidate.VoterID)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid voter ID"})
+				return
+			}
+
+			var voter models.Voter
+			err = voterCollection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&voter)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch voter data for candidate"})
+				return
+			}
+
+			candidate.Voter = voter
+
 			registeredCandidates = append(registeredCandidates, candidate)
 		}
 

@@ -273,3 +273,76 @@ func GetRegistrationElections() gin.HandlerFunc {
 		c.JSON(http.StatusOK, gin.H{"elections": registrationElections})
 	}
 }
+
+
+func UpdateElectionPhase() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get the election ID from the request parameters
+		electionID := c.Param("id")
+
+		// Parse the request body to get the start and end time
+		var updatePhase struct {
+			StartTime time.Time `json:"start_data" validate:"required"`
+			EndTime   time.Time `json:"end_date" validate:"required"`
+		}
+		if err := c.ShouldBindJSON(&updatePhase); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		// Convert the election ID to an ObjectID
+		objectID, err := primitive.ObjectIDFromHex(electionID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid election ID"})
+			return
+		}
+
+		// Create a MongoDB context
+		ctx := context.Background()
+
+		// Find the existing election to check the current phase
+		var existingElection models.Election
+		err = electionCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&existingElection)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Election not found"})
+			return
+		}
+
+		// Define the allowed phase sequence
+		allowedPhases := []string{"INITIALIZATION", "REGISTRATION", "VOTING", "RESULT", "DECLARED"}
+
+		// Find the index of the current phase in the sequence
+		currentPhaseIndex := -1
+		for i, phase := range allowedPhases {
+			if phase == existingElection.ElectionPhase {
+				currentPhaseIndex = i
+				break
+			}
+		}
+
+		// If the current phase is not found or it's the last phase (RESULT), return "Result declared"
+		if currentPhaseIndex == -1 || currentPhaseIndex == len(allowedPhases)-1 {
+			c.JSON(http.StatusOK, gin.H{"message": "Result declared"})
+			return
+		}
+
+		// Update the election phase to the next phase in the sequence
+		nextPhase := allowedPhases[currentPhaseIndex+1]
+
+		// Update the election phase, start time, and end time
+		update := bson.D{
+			{"$set", bson.D{
+				{"election_phase", nextPhase},
+				{"start_date", updatePhase.StartTime},
+				{"end_date", updatePhase.EndTime},
+			}},
+		}
+		_, err = electionCollection.UpdateOne(ctx, bson.M{"_id": objectID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update election phase"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Election phase updated to %s", nextPhase)})
+	}
+}
