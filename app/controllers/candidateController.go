@@ -351,21 +351,52 @@ func GetCandidatesByElectionID() gin.HandlerFunc {
 			return
 		}
 		defer cursor.Close(context.Background())
-
 		// Collect candidates that match the query
 		for cursor.Next(context.Background()) {
 			var candidate models.Candidate
 			if err := cursor.Decode(&candidate); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode candidates"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to decode candidate"})
 				return
 			}
+			log.Printf("Candy: %+v", candidate)
+			// Populate Party data for each registered candidate
+			objectID, err := primitive.ObjectIDFromHex(candidate.PartyID)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid constituency ID"})
+				return
+			}
+
+			var party models.Party
+			err = partyCollection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&party)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch party data for candidate"})
+				return
+			}
+			log.Printf("Party: %+v", party)
+			candidate.Party = party
+
+			// Populate Voter data for each registered candidate
+			objectID, err = primitive.ObjectIDFromHex(candidate.VoterID)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid voter ID"})
+				return
+			}
+
+			var voter models.Voter
+			err = voterCollection.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&voter)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch voter data for candidate"})
+				return
+			}
+
+			candidate.Voter = voter
+
 			candidates = append(candidates, candidate)
 		}
 
-		c.JSON(http.StatusOK, candidates)
+		c.JSON(http.StatusOK, gin.H{"candidates": candidates})
 	}
 }
-
 
 func HashPassword(password string) string {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
