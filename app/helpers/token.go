@@ -17,15 +17,15 @@ import (
 )
 
 type VoterSignedDetails struct {
-	ID           primitive.ObjectID
-	Name         string
-	AdhaarNumber string
-	Phone        string
-	DateOfBirth  string
-	Gender       string
-	IsEligible   bool
-	IsVoted      bool
-	Role         string
+	ID           primitive.ObjectID `bson:"_id" json:"_id"`
+	Name         string             `bson:"name" json:"name" validate:"required,min=2,max=100"`
+	AdhaarNumber string             `bson:"adhaar_number" json:"adhaar_number" validate:"required,min=12"`
+	Phone        string             `bson:"phone" json:"phone" validate:"regexp=(0|+91|091|91)[0-9]+$"`
+	DateOfBirth  string             `bson:"date_of_birth" json:"date_of_birth" validate:"required"`
+	Gender       string             `bson:"gender" json:"gender" validate:"required,eq=MALE|eq=FEMALE"`
+	IsEligible   bool               `bson:"is_eligible" json:"is_eligible" validate:"required"`
+	IsVoted      bool               `bson:"is_voted" json:"is_voted" validate:"required"`
+	Role         string             `json:"role"`
 	jwt.StandardClaims
 }
 

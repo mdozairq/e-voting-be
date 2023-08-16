@@ -428,3 +428,29 @@ func GetElectionByAadhaarLocation() gin.HandlerFunc {
 		})
 	}
 }
+
+func GetVoterByID() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get the voter ID from the request parameters
+		voterID := c.Param("id")
+
+		// Convert the election ID to an ObjectID
+		objectID, err := primitive.ObjectIDFromHex(voterID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid voter ID"})
+			return
+		}
+		// Create a MongoDB context
+		ctx := context.Background()
+
+		// Find the election based on its ID
+		var voter models.Voter
+		err = voterCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&voter)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Voter not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, voter)
+	}
+}

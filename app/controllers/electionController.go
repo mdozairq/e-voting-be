@@ -170,10 +170,6 @@ func GetElectionByID() gin.HandlerFunc {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid election ID"})
 			return
 		}
-
-		// Assuming you have a MongoDB client and collection references named "electionCollection" and "constituencyCollection"
-		// You need to pass your MongoDB client and collection references as arguments to this function.
-
 		// Create a MongoDB context
 		ctx := context.Background()
 
