@@ -454,3 +454,4 @@ func GetVoterByID() gin.HandlerFunc {
 		c.JSON(http.StatusOK, voter)
 	}
 }
+

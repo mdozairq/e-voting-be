@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -270,12 +271,11 @@ func GetRegistrationElections() gin.HandlerFunc {
 	}
 }
 
-
 func UpdateElectionPhase() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Get the election ID from the request parameters
 		electionID := c.Param("id")
-
+		log.Printf("ElectionId: %+v", electionID)
 		// Parse the request body to get the start and end time
 		var updatePhase struct {
 			StartTime time.Time `json:"start_data" validate:"required"`
@@ -340,5 +340,112 @@ func UpdateElectionPhase() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Election phase updated to %s", nextPhase)})
+	}
+}
+
+func GetElectionResults() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get the election ID from the query parameter
+		electionID := c.Param("electionId")
+		log.Printf("ElectionId: %+v", electionID)
+		objectID, err := primitive.ObjectIDFromHex(electionID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid election ID"})
+			return
+		}
+		// Query the election to ensure it is in the RESULT phase
+		var election models.Election
+		err = electionCollection.FindOne(context.Background(), bson.M{
+			"_id":            objectID,
+			"election_phase": "RESULT",
+		}).Decode(&election)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Election not found in RESULT phase"})
+			return
+		}
+
+		fmt.Printf("%v",election)
+
+		// Query to find all ballots cast in the specified election
+		matchBallotsQuery := bson.D{
+			{"election_id", electionID},
+		}
+
+		// Count the total number of ballots in the election
+		totalBallots, err := ballotCollection.CountDocuments(context.Background(), matchBallotsQuery)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch total ballots"})
+			return
+		}
+
+		// Aggregate pipeline to calculate candidate-wise vote counts and percentages
+		pipeline := []bson.M{
+			{
+				"$match": bson.M{"election_id": electionID},
+			},
+			{
+				"$group": bson.M{
+					"_id":        "$candidate_id",
+					"vote_count": bson.M{"$sum": 1},
+					"candidate":  bson.M{"$first": "$candidate_id"},
+					"party":      bson.M{"$first": "$party_id"},
+				},
+			},
+			{
+				"$lookup": bson.M{
+					"from":         "candidates",
+					"localField":   "candidate",
+					"foreignField": "_id",
+					"as":           "candidate",
+				},
+			},
+			{
+				"$unwind": "$candidate",
+			},
+			{
+				"$lookup": bson.M{
+					"from":         "parties",
+					"localField":   "party",
+					"foreignField": "_id",
+					"as":           "party",
+				},
+			},
+			{
+				"$unwind": "$party",
+			},
+			{
+				"$project": bson.M{
+					"_id":        0,
+					"candidate":  "$candidate.username",
+					"party":      "$party.name",
+					"vote_count": 1,
+					"percentage": bson.M{
+						"$multiply": []interface{}{
+							bson.M{"$divide": []interface{}{"$vote_count", totalBallots}},
+							100,
+						},
+					},
+				},
+			},
+			{
+				"$sort": bson.M{"percentage": -1},
+			},
+		}
+
+		// Aggregate results using the pipeline
+		cursor, err := ballotCollection.Aggregate(context.Background(), pipeline)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to calculate results"})
+			return
+		}
+
+		// Collect and return the results
+		var results []bson.M
+		if err := cursor.All(context.Background(), &results); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve results"})
+			return
+		}
+
+		c.JSON(http.StatusOK, results)
 	}
 }

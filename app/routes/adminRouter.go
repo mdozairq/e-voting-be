@@ -17,6 +17,6 @@ func AdminRoutes(superRoute *gin.RouterGroup) {
 		adminRouters.POST("/party/create", middlewares.AdminTokenAuthMiddleware(), controllers.CreateParty())
 		adminRouters.GET("/candidate", middlewares.AdminTokenAuthMiddleware(), controllers.GetCandidatesByElectionID())
 		adminRouters.PATCH("/election/:id", middlewares.AdminTokenAuthMiddleware(), controllers.UpdateElectionPhase())
+		adminRouters.GET("/election/result/:id", middlewares.AdminTokenAuthMiddleware(), controllers.GetElectionResults())
 	}
-
 }
